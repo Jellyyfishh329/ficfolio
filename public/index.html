@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Ficfolio — your AO3 library</title>
+    <meta name="description" content="A private, local-first library for your AO3 EPUB downloads." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231c1815'/%3E%3Cpath d='M17 18h13a6 6 0 0 1 6 6v24H23a6 6 0 0 1-6-6V18Z' fill='%23e07a5f'/%3E%3Cpath d='M47 18H34a6 6 0 0 0-6 6v24h13a6 6 0 0 0 6-6V18Z' fill='%23f1e8de' opacity='.9'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/styles.css?v=9" />
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem('ficfolio:theme');
+          const theme =
+            saved === 'light' || saved === 'sepia' || saved === 'dark'
+              ? saved
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.dataset.theme = theme;
+        } catch (_) {
+          /* default theme */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Ficfolio home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M4.5 6.5h8.7a3.3 3.3 0 0 1 3.3 3.3v16.7H7.8a3.3 3.3 0 0 1-3.3-3.3V6.5Z" fill="currentColor" opacity=".9" />
+            <path d="M27.5 6.5h-8.7A3.3 3.3 0 0 0 15.5 9.8v16.7h8.7a3.3 3.3 0 0 0 3.3-3.3V6.5Z" fill="currentColor" opacity=".45" />
+          </svg>
+        </span>
+        <span class="brand-text">
+          <strong>Ficfolio</strong>
+          <small>AO3 reading library</small>
+        </span>
+      </a>
+
+      <div class="search" role="search">
+        <svg class="search-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="8.75" cy="8.75" r="5.25" stroke="currentColor" stroke-width="1.6" />
+          <path d="m12.75 12.75 3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <input
+          id="search"
+          type="search"
+          placeholder="Search titles, authors, tags…"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search your library"
+        />
+        <button id="clear-search" class="search-clear" type="button" title="Clear search" hidden>×</button>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="theme-btn" class="icon-btn" type="button" title="Change theme" aria-label="Change theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7" />
+            <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 14.4A8.4 8.4 0 0 1 9.6 4a8.5 8.5 0 1 0 10.4 10.4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <button id="add-btn" class="primary-btn" type="button">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M10 4.5v11M4.5 10h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          <span>Add EPUBs</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="library">
+      <section class="library-head">
+        <div>
+          <h1>Your library</h1>
+          <p id="library-meta" class="library-meta">Gathering your stories…</p>
+        </div>
+        <div class="library-tools" id="library-tools">
+          <label class="sort-wrap">
+            <span class="sr-only">Sort library</span>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M6.5 4.5v11M6.5 15.5 3.5 12.5M6.5 15.5l3-3M13.5 15.5v-11M13.5 4.5l-3 3M13.5 4.5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <select id="sort">
+              <option value="recent">Recently added</option>
+              <option value="title">Title A–Z</option>
+              <option value="author">Author A–Z</option>
+              <option value="chapters">Longest first</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <div id="tag-bar" class="tag-bar" hidden></div>
+      <section id="grid" class="grid" aria-live="polite"></section>
+    </main>
+
+    <input id="file-input" type="file" accept=".epub,application/epub+zip" multiple hidden />
+
+    <!-- Reader -->
+    <section id="reader" class="reader" tabindex="-1" hidden aria-hidden="true" aria-label="Reading view">
+      <header class="reader-bar">
+        <button id="reader-back" class="reader-back" type="button">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M12.5 4.5 7 10l5.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>Library</span>
+        </button>
+
+        <div class="reader-titles">
+          <span id="reader-book-title" class="reader-book-title"></span>
+          <small id="reader-book-author" class="reader-book-author"></small>
+        </div>
+
+        <div class="reader-tools">
+          <button id="chapter-toggle" class="reader-tool-btn" type="button" title="Chapter list" aria-label="Chapter list">
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M6.5 5.5h10M6.5 10h10M6.5 14.5h10M3 5.5h.01M3 10h.01M3 14.5h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+          </button>
+          <div class="settings-wrap">
+            <button id="settings-btn" class="reader-tool-btn settings-btn" type="button" title="Reading settings" aria-label="Reading settings" aria-expanded="false">
+              Aa
+            </button>
+            <div id="reader-settings" class="settings" hidden>
+              <div class="settings-group">
+                <span class="settings-label">Text size</span>
+                <div class="stepper">
+                  <button type="button" data-font-size="-1" aria-label="Decrease text size">A−</button>
+                  <span id="font-size-value">19</span>
+                  <button type="button" data-font-size="1" aria-label="Increase text size">A+</button>
+                </div>
+              </div>
+              <div class="settings-group">
+                <span class="settings-label">Line spacing</span>
+                <div class="segmented" data-setting="leading">
+                  <button type="button" data-value="1.6">Snug</button>
+                  <button type="button" data-value="1.75">Cozy</button>
+                  <button type="button" data-value="1.95">Airy</button>
+                </div>
+              </div>
+              <div class="settings-group">
+                <span class="settings-label">Typeface</span>
+                <div class="segmented" data-setting="family">
+                  <button type="button" data-value="serif">Serif</button>
+                  <button type="button" data-value="sans">Sans</button>
+                </div>
+              </div>
+              <div class="settings-group">
+                <span class="settings-label">Page tone</span>
+                <div class="segmented" data-setting="theme">
+                  <button type="button" data-value="light">Light</button>
+                  <button type="button" data-value="sepia">Sepia</button>
+                  <button type="button" data-value="dark">Dark</button>
+                </div>
+              </div>
+              <p class="settings-hint">Reading position is saved automatically.</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="reader-progress" aria-hidden="true"><div id="reader-progress-fill"></div></div>
+
+      <div class="reader-body">
+        <div id="reader-scrim" class="reader-scrim" hidden></div>
+        <aside id="chapter-list" class="chapter-list" aria-label="Chapters">
+          <div class="chapter-list-head">
+            <span>Chapters</span>
+            <span id="chapter-count" class="chapter-count"></span>
+          </div>
+          <div id="chapter-list-items" class="chapter-list-items"></div>
+        </aside>
+
+        <div id="reader-scroll" class="reader-scroll">
+          <article id="reader-content" class="chapter-content"></article>
+
+          <nav class="chapter-nav" aria-label="Chapter navigation">
+            <button id="prev-chapter" class="chapter-nav-btn prev" type="button">
+              <span class="chapter-nav-eyebrow">Previous</span>
+              <span id="prev-chapter-title" class="chapter-nav-title"></span>
+            </button>
+            <button id="next-chapter" class="chapter-nav-btn next" type="button">
+              <span class="chapter-nav-eyebrow">Next</span>
+              <span id="next-chapter-title" class="chapter-nav-title"></span>
+            </button>
+          </nav>
+          <p class="end-note">· end of chapter ·</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Whole-page drop target -->
+    <div id="drop-overlay" class="drop-overlay" hidden>
+      <div class="drop-overlay-inner">
+        <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <path d="M16 8h12l8 8v24H16V8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+          <path d="M28 8v8h8M22 28h8M26 24v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <strong>Drop to add to your library</strong>
+        <span>AO3 EPUB files, as many as you like</span>
+      </div>
+    </div>
+
+    <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+    <dialog id="confirm-dialog" class="confirm-dialog">
+      <form method="dialog">
+        <h2 id="confirm-title">Remove this fic?</h2>
+        <p id="confirm-message"></p>
+        <div class="confirm-actions">
+          <button value="cancel" class="ghost-btn" type="submit">Keep it</button>
+          <button value="confirm" id="confirm-ok" class="danger-btn" type="submit">Remove</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="/app.js?v=9" defer></script>
+  </body>
+</html>
+
+
